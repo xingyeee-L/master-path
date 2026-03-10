@@ -11,6 +11,17 @@ node_modules
 dist
 dist-ssr
 *.local
+test-results
+playwright-report
+.vitest
+.vitest-attachments
+
+src-tauri/target
+src-tauri/target/**
+.tauri
+
+.env
+.env.*
 
 # Editor directories and files
 .vscode/*
