@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import useStore, { useLevel } from '@/store/useStore';
 import { motion } from 'framer-motion';
+import { BgmPlayer } from '@/components/BgmPlayer';
 
 function getDayOfYear(date: Date) {
   const start = new Date(date.getFullYear(), 0, 0);
@@ -52,6 +53,7 @@ export function Hud() {
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
           />
         </div>
+        <BgmPlayer />
       </div>
     </div>
   );

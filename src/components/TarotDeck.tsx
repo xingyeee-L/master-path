@@ -127,7 +127,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
     <>
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.div
-          className="relative w-full max-w-6xl h-[520px] mx-auto"
+          className="relative w-full max-w-6xl h-[460px] mx-auto"
           style={{ perspective: 1200 }}
         >
           <motion.div
@@ -138,7 +138,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
               {uncompletedTasks.map((task, idx) => {
                 const step = 22;
                 const angle = (idx - currentIndex) * step;
-                const radius = 420;
+                const radius = 360;
                 // Mild depth cues based on angle
                 const rad = (angle % 360) * Math.PI / 180;
                 const frontFactor = (Math.cos(rad) + 1) / 2; // 0..1
@@ -164,7 +164,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
                     }}
                   >
                     <motion.div
-                      className={`w-64 h-96 bg-black/40 border backdrop-blur-md rounded-2xl text-white shadow-2xl relative overflow-hidden ${rarityClass}`}
+                      className={`w-56 h-80 bg-black/40 border backdrop-blur-md rounded-2xl text-white shadow-2xl relative overflow-hidden ${rarityClass}`}
                       animate={{
                         transform: `rotateY(${angle}deg) translateZ(${radius}px) rotateY(${-angle}deg)`,
                         opacity,

@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useT } from '@/i18n';
 import useLocale from '@/store/useLocale';
 import { IntroRitual } from '@/components/IntroRitual';
+import { DailyIntro } from '@/components/DailyIntro';
 
 interface FloatingXP {
   id: string;
@@ -30,6 +31,7 @@ function App() {
   const [floatingXPs, setFloatingXPs] = useState<FloatingXP[]>([]);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
+  const [showDailyIntro, setShowDailyIntro] = useState(false);
 
   const toggleTask = useStore((state) => state.toggleTask);
   const hasStarted = useStore((state) => state.hasStarted);
@@ -46,6 +48,20 @@ function App() {
     const timeoutId = window.setTimeout(() => setShowLevelUp(false), 3500);
     return () => window.clearTimeout(timeoutId);
   }, [level, prevLevel]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+    const today = new Date().toLocaleDateString('sv');
+    const shown = useStore.getState().stats.lastIntroDate;
+    if (shown !== today) {
+      setShowDailyIntro(true);
+    }
+  }, [hasStarted]);
+
+  const handleCloseDailyIntro = () => {
+    setShowDailyIntro(false);
+    useStore.getState().markDailyIntroShown();
+  };
 
   const handleTaskComplete = (task: Task) => {
     const gainedXP = task.isZen ? 100 : task.duration;
@@ -100,6 +116,7 @@ function App() {
       <DigitalGridBackground />
       {hasStarted && <Hud />}
       <IntroRitual open={!hasStarted} onStart={startChallenge} />
+      {hasStarted && <DailyIntro open={showDailyIntro} onClose={handleCloseDailyIntro} />}
       <div className="fixed top-6 right-6 z-50 flex gap-2 bg-black/30 backdrop-blur-md border border-white/10 rounded-full p-1">
         <Button
           variant={lang === 'en' ? 'secondary' : 'ghost'}

@@ -20,6 +20,7 @@ export interface Stats {
   currentDailyXP: number;
   lastXPDate: string;
   lastZenDate: string;
+  lastIntroDate?: string;
 }
 
 interface StoreState {
@@ -30,6 +31,7 @@ interface StoreState {
   stats: Stats;
   unlockedAchievements: string[];
   latestAchievement: string | null;
+  markDailyIntroShown: () => void;
 
   addTask: (title: string, duration: number, isZen?: boolean) => void;
   toggleTask: (id: string) => void;
@@ -96,6 +98,7 @@ const useStore = create<StoreState>()(
         currentDailyXP: 0,
         lastXPDate: new Date().toLocaleDateString('sv'),
         lastZenDate: '',
+        lastIntroDate: '',
       },
       unlockedAchievements: [],
       latestAchievement: null,
@@ -193,12 +196,19 @@ const useStore = create<StoreState>()(
             currentDailyXP: 0,
             lastXPDate: new Date().toLocaleDateString('sv'),
             lastZenDate: '',
+            lastIntroDate: '',
           },
           unlockedAchievements: [],
         });
       },
 
       clearLatestAchievement: () => set({ latestAchievement: null }),
+      markDailyIntroShown: () => {
+        const today = new Date().toLocaleDateString('sv');
+        set((state) => ({
+          stats: { ...state.stats, lastIntroDate: today }
+        }));
+      },
     }),
     {
       name: 'master-path-storage',
