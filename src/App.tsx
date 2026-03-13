@@ -18,6 +18,7 @@ import { useT } from '@/i18n';
 import useLocale from '@/store/useLocale';
 import { IntroRitual } from '@/components/IntroRitual';
 import { DailyIntro } from '@/components/DailyIntro';
+import { FocusTimerOverlay, type FocusCompletePayload } from '@/components/FocusTimerOverlay';
 
 interface FloatingXP {
   id: string;
@@ -33,7 +34,10 @@ function App() {
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
   const [showDailyIntro, setShowDailyIntro] = useState(false);
 
-  const toggleTask = useStore((state) => state.toggleTask);
+  const completeTaskWithXp = useStore((state) => state.completeTaskWithXp);
+  const startFocus = useStore((state) => state.startFocus);
+  const commitFocusSession = useStore((state) => state.commitFocusSession);
+  const activeFocus = useStore((state) => state.activeFocus);
   const hasStarted = useStore((state) => state.hasStarted);
   const startChallenge = useStore((state) => state.startChallenge);
   const { level, levelName } = useLevel();
@@ -78,13 +82,53 @@ function App() {
 
     // 3. Wait and then commit to store
     setTimeout(() => {
-      toggleTask(task.id);
+      completeTaskWithXp(task.id, gainedXP);
       setPendingTaskIds(prev => {
         const next = new Set(prev);
         next.delete(task.id);
         return next;
       });
       // Remove flying XP
+      setFloatingXPs(prev => prev.filter(xp => xp.id !== newXP.id));
+    }, 800);
+  };
+
+  const handleStartFocus = (task: Task) => {
+    const presetSeconds = Math.max(1, task.duration * 60);
+    const baseXp = task.isZen ? 100 : task.duration;
+    startFocus({ taskId: task.id, title: task.title, isZen: task.isZen, presetSeconds, baseXp });
+  };
+
+  const handleFocusComplete = (payload: FocusCompletePayload) => {
+    setPendingTaskIds(prev => {
+      const next = new Set(prev);
+      next.add(payload.taskId);
+      return next;
+    });
+
+    const newXP: FloatingXP = { id: uuidv4(), xp: payload.gainedXp };
+    setFloatingXPs(prev => [...prev, newXP]);
+
+    setTimeout(() => {
+      completeTaskWithXp(payload.taskId, payload.gainedXp, payload.endedAt);
+      commitFocusSession({
+        taskId: payload.taskId,
+        title: payload.title,
+        isZen: payload.isZen,
+        presetSeconds: payload.presetSeconds,
+        baseXp: payload.baseXp,
+        focusedSeconds: payload.focusedSeconds,
+        interruptions: payload.interruptions,
+        gainedXp: payload.gainedXp,
+        startedAt: payload.startedAt,
+        endedAt: payload.endedAt,
+      });
+
+      setPendingTaskIds(prev => {
+        const next = new Set(prev);
+        next.delete(payload.taskId);
+        return next;
+      });
       setFloatingXPs(prev => prev.filter(xp => xp.id !== newXP.id));
     }, 800);
   };
@@ -137,9 +181,18 @@ function App() {
       </div>
 
       <div className="relative w-full h-full">
-        {hasStarted && <TarotDeck onTaskComplete={handleTaskComplete} pendingTaskIds={pendingTaskIds} />}
+        {hasStarted && (
+          <TarotDeck
+            onTaskComplete={handleTaskComplete}
+            onStartFocus={handleStartFocus}
+            pendingTaskIds={pendingTaskIds}
+            immersive={!!activeFocus}
+          />
+        )}
       </div>
       {hasStarted && <TaskInput />}
+
+      {hasStarted && <FocusTimerOverlay onComplete={handleFocusComplete} />}
 
       <div className="fixed bottom-8 left-8 z-50 flex gap-4">
         <Button variant="ghost" className="text-zinc-500 hover:text-white" onClick={() => setShowBadge(true)}>

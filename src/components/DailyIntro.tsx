@@ -148,6 +148,8 @@ function MilestoneBlock({ day, t }: { day: number; t: ReturnType<typeof useT> })
 }
 
 function MetricsBlock({ tasks, t }: { tasks: Task[]; t: ReturnType<typeof useT> }) {
+  const focusDaily = useStore((s) => s.focusDaily);
+  const focusHistory = useStore((s) => s.focusHistory);
   const today = new Date().toLocaleDateString('sv');
   const dayKey = (d: Date) => d.toLocaleDateString('sv');
   const y1 = new Date(); y1.setDate(y1.getDate() - 1);
@@ -156,12 +158,19 @@ function MetricsBlock({ tasks, t }: { tasks: Task[]; t: ReturnType<typeof useT> 
   const map: Record<string, { xp: number; zen: number }> = {};
   for (const tsk of tasks) {
     if (!tsk.completed) continue;
-    const k = new Date(tsk.date).toLocaleDateString('sv');
-    const xp = tsk.isZen ? 100 : tsk.duration;
+    const k = new Date(tsk.completedAt ?? tsk.date).toLocaleDateString('sv');
+    const xp = tsk.gainedXp ?? (tsk.isZen ? 100 : tsk.duration);
     const zen = tsk.isZen ? 1 : 0;
     if (!map[k]) map[k] = { xp: 0, zen: 0 };
     map[k].xp += xp;
     map[k].zen += zen;
+  }
+  for (const s of focusHistory) {
+    if (!s.isZen) continue;
+    const k = new Date(s.endedAt).toLocaleDateString('sv');
+    if (!map[k]) map[k] = { xp: 0, zen: 0 };
+    map[k].xp += s.gainedXp;
+    map[k].zen += 1;
   }
   const xp0 = map[k0]?.xp ?? 0;
   const xp1 = map[k1]?.xp ?? 0;
@@ -169,12 +178,15 @@ function MetricsBlock({ tasks, t }: { tasks: Task[]; t: ReturnType<typeof useT> 
   const sum3 = xp0 + xp1 + xp2;
   const zen3 = (map[k0]?.zen ?? 0) + (map[k1]?.zen ?? 0) + (map[k2]?.zen ?? 0);
   const delta = xp0 - xp1;
+  const focus0 = Math.floor((focusDaily[k0]?.focusedSeconds ?? 0) / 60);
+  const int0 = focusDaily[k0]?.interruptions ?? 0;
   return (
     <div className="mt-5 p-3 rounded-xl border border-white/10 bg-white/5 text-zinc-200">
       <div className="text-xs font-mono text-zinc-400">{t('metrics_title')}</div>
       <div className="mt-2 text-sm">
         <div>{t('metrics_line_xp').replace('{SUM}', String(sum3)).replace('{DELTA}', (delta >= 0 ? '+' : '') + String(delta))}</div>
         <div className="mt-1">{t('metrics_line_zen').replace('{ZEN}', String(zen3))}</div>
+        <div className="mt-1">{t('metrics_line_focus').replace('{FOCUS}', String(focus0)).replace('{INT}', String(int0))}</div>
       </div>
     </div>
   );

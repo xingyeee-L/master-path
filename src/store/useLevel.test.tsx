@@ -30,6 +30,9 @@ describe('useLevel', () => {
       totalXP: 0,
       startDate: null,
       hasStarted: false,
+      activeFocus: null,
+      focusDaily: {},
+      focusHistory: [],
       stats: {
         totalZenCount: 0,
         maxDailyXp: 0,

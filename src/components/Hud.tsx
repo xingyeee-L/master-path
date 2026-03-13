@@ -38,14 +38,14 @@ export function Hud() {
   const day = startDate ? calculateDayDifference(startDate) : 1;
 
   return (
-    <div className="fixed top-8 left-8 text-white font-sans z-50">
-      <div className="text-5xl font-bold font-mono">{time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
-      <div className="text-zinc-400 font-mono">{time.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+    <div className="fixed top-6 left-6 md:top-8 md:left-8 text-white font-sans z-50 pointer-events-none">
+      <div className="text-4xl md:text-5xl font-bold font-mono">{time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+      <div className="text-zinc-400 font-mono text-sm md:text-base">{time.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
 
-      <div className="mt-6">
-        <div className="text-zinc-300 text-sm">Day {day} / 21</div>
-        <div className="text-lg font-semibold">Lv.{level} {levelName}</div>
-        <div className="w-48 bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
+      <div className="mt-4 md:mt-6 pointer-events-auto">
+        <div className="text-zinc-300 text-xs md:text-sm">Day {day} / 21</div>
+        <div className="text-base md:text-lg font-semibold">Lv.{level} {levelName}</div>
+        <div className="w-36 md:w-48 bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
           <motion.div
             className="bg-white h-1.5 rounded-full"
             initial={{ width: 0 }}
@@ -53,7 +53,9 @@ export function Hud() {
             transition={{ type: "spring", stiffness: 100, damping: 20 }}
           />
         </div>
-        <BgmPlayer />
+        <div className="mt-2 scale-90 origin-top-left md:scale-100">
+          <BgmPlayer />
+        </div>
       </div>
     </div>
   );

@@ -53,5 +53,5 @@ test('放空卡进入倒计时界面', async ({ page }) => {
   await ensureStarted(page);
   await page.getByText(/🧘/).first().click();
   await expect(page.getByRole('button', { name: /放弃|Give up/ })).toBeVisible();
-  await expect(page.locator('div.text-9xl')).toContainText(/\d{2}:\d{2}/);
+  await expect(page.getByTestId('focus-timer-display')).toContainText(/\d{2}:\d{2}/);
 });

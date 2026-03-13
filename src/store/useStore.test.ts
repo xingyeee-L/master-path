@@ -12,7 +12,7 @@ vi.mock('idb-keyval', () => ({
   },
 }));
 
-import useStore, { ACHIEVEMENTS } from './useStore';
+import useStore, { ACHIEVEMENTS, computeGainedXp } from './useStore';
 
 function resetStore() {
   const today = new Date().toLocaleDateString('sv');
@@ -21,6 +21,9 @@ function resetStore() {
     totalXP: 0,
     startDate: null,
     hasStarted: false,
+    activeFocus: null,
+    focusDaily: {},
+    focusHistory: [],
     stats: {
       totalZenCount: 0,
       maxDailyXp: 0,
@@ -81,5 +84,33 @@ describe('useStore', () => {
   it('战胜欲望解锁 悬崖勒马', () => {
     useStore.getState().incrementResistedTemptation();
     expect(useStore.getState().unlockedAchievements).toContain(ACHIEVEMENTS.PRECIPICE_REINED.id);
+  });
+
+  it('经验值计算按专注比例分段', () => {
+    const preset = 30 * 60;
+    expect(computeGainedXp(preset, Math.floor(preset * 0.79), 30)).toBe(0);
+    expect(computeGainedXp(preset, Math.floor(preset * 0.8), 30)).toBe(30);
+    expect(computeGainedXp(preset, preset, 30)).toBe(45);
+    expect(computeGainedXp(preset, Math.floor(preset * 1.2), 30)).toBe(45);
+  });
+
+  it('提交专注记录会更新当日统计与历史', () => {
+    const endedAt = new Date().toISOString();
+    useStore.getState().commitFocusSession({
+      taskId: 't1',
+      title: 'Focus',
+      isZen: false,
+      presetSeconds: 600,
+      baseXp: 10,
+      focusedSeconds: 600,
+      interruptions: 2,
+      gainedXp: 15,
+      startedAt: new Date(Date.now() - 600000).toISOString(),
+      endedAt,
+    });
+    const day = new Date(endedAt).toLocaleDateString('sv');
+    expect(useStore.getState().focusDaily[day]).toMatchObject({ sessions: 1, interruptions: 2, xp: 15, focusedSeconds: 600 });
+    expect(useStore.getState().focusHistory.length).toBe(1);
+    expect(useStore.getState().focusHistory[0].taskId).toBe('t1');
   });
 });

@@ -48,6 +48,9 @@ function resetStores() {
     totalXP: 0,
     startDate: new Date().toISOString(),
     hasStarted: true,
+    activeFocus: null,
+    focusDaily: {},
+    focusHistory: [],
     stats: {
       totalZenCount: 0,
       maxDailyXp: 0,

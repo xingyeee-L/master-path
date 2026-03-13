@@ -4,41 +4,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n';
 import useLocale from '@/store/useLocale';
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Timer } from 'lucide-react';
 import { TarotCardOrnament } from '@/components/TarotCardOrnament';
 import { TarotArcanaMark, getRarityFromXP } from '@/components/TarotArcanaMark';
 
-function ZenTimer({ onComplete }: { onComplete: () => void }) {
-  const [time, setTime] = useState(15 * 60);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [onComplete]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  return <div className="text-9xl font-mono font-bold text-white">{formatTime(time)}</div>;
-}
-
-export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTaskComplete: (task: Task) => void, pendingTaskIds?: Set<string> }) {
+export function TarotDeck({
+  onTaskComplete,
+  onStartFocus,
+  pendingTaskIds = new Set(),
+  immersive = false,
+}: {
+  onTaskComplete: (task: Task) => void;
+  onStartFocus: (task: Task) => void;
+  pendingTaskIds?: Set<string>;
+  immersive?: boolean;
+}) {
   const tasks = useStore(state => state.tasks);
   const lastZenDate = useStore((state) => state.stats.lastZenDate);
   const [uncompletedTasks, setUncompletedTasks] = useState<Task[]>([]);
-  const [isZenMode, setIsZenMode] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const centeredTaskIdRef = useRef<string | null>(null);
   const t = useT();
@@ -101,7 +84,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isZenMode) return;
+      if (immersive) return;
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         shift(-1);
@@ -113,21 +96,13 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isZenMode, shift]);
-
-  const handleZenComplete = () => {
-    const zenTask = uncompletedTasks.find(t => t.isZen);
-    if (zenTask) {
-      onTaskComplete(zenTask);
-    }
-    setIsZenMode(false);
-  };
+  }, [immersive, shift]);
 
   return (
     <>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
         <motion.div
-          className="relative w-full max-w-6xl h-[460px] mx-auto"
+          className="relative w-full max-w-6xl h-[400px] md:h-[460px] mx-auto"
           style={{ perspective: 1200 }}
         >
           <motion.div
@@ -138,7 +113,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
               {uncompletedTasks.map((task, idx) => {
                 const step = 22;
                 const angle = (idx - currentIndex) * step;
-                const radius = 360;
+                const radius = window.innerWidth < 768 ? 240 : 360; // Mobile: smaller radius
                 // Mild depth cues based on angle
                 const rad = (angle % 360) * Math.PI / 180;
                 const frontFactor = (Math.cos(rad) + 1) / 2; // 0..1
@@ -172,7 +147,7 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
                       transition={{ type: 'spring', stiffness: 140, damping: 22 }}
                       whileHover={{ rotateX: -4, rotateY: 4, y: -8, boxShadow: '0 20px 60px rgba(255,255,255,0.12)' }}
                       onClick={() => {
-                        if (task.isZen) setIsZenMode(true);
+                        if (task.isZen) onStartFocus(task);
                       }}
                     >
                       <TarotCardOrnament seed={task.id} kind={task.isZen ? 'lunar' : undefined} xp={gainedXP} />
@@ -187,8 +162,17 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
                         <div className="flex-1 flex items-center justify-center py-6">
                           <h2 className="text-2xl font-bold text-center text-white px-2">{task.title}</h2>
                         </div>
-                        {task.isZen ? <div /> : (
-                          <div className="flex justify-end">
+                        <div className="flex justify-between">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-white"
+                            aria-label={`focus:${task.id}`}
+                            onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
+                          >
+                            <Timer className="w-5 h-5" />
+                          </Button>
+                          {task.isZen ? <div /> : (
                             <Button
                               size="icon"
                               variant="ghost"
@@ -198,8 +182,8 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
                             >
                               <Check className="w-5 h-5" />
                             </Button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   </div>
@@ -234,22 +218,6 @@ export function TarotDeck({ onTaskComplete, pendingTaskIds = new Set() }: { onTa
           </div>
         </motion.div>
       </div>
-
-      <AnimatePresence>
-        {isZenMode && (
-          <motion.div
-            className="fixed inset-0 bg-zinc-950/95 backdrop-blur-3xl flex flex-col items-center justify-center z-[100]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <ZenTimer onComplete={handleZenComplete} />
-            <Button variant="ghost" onClick={() => setIsZenMode(false)} className="absolute bottom-8 text-zinc-500 hover:text-white transition-opacity">
-              {t('give_up')}
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
